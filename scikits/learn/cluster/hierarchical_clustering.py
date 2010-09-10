@@ -31,9 +31,8 @@ def _inertia(i, j, moments):
     return np.sum(q - (s**2/n))
 
 
-def ward_simple(feature, verbose=0):
-    """                  
-    Ward clustering based on a Feature matrix
+def ward(feature, verbose=0):
+    """Ward clustering based on a Feature matrix
 
     Parameters:
     -------------
@@ -76,13 +75,12 @@ def ward_simple(feature, verbose=0):
     # recursive merge loop
     for k in range(n_samples, q):
         # identify the merge
-        d = inertia.min()
-        height[k] = d   
-        i, j = np.where(inertia==d)
-        i = i[0]
-        j = j[0]
+        ij = inertia.argmin()
+        i, j = ij/q, ij%q
+        d = inertia[i, j]
         parent[i] = k
         parent[j] = k
+        height[k] = d   
 
         # update the moments
         for p in range(3):
