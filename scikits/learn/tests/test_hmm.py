@@ -1,10 +1,11 @@
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           TestCase)
+
 import numpy as np
 
-from .. import hmm
-
+from numpy.testing import assert_array_equal, assert_array_almost_equal
+from unittest import TestCase
 from .test_gmm import _generate_random_spd_matrix
+
+from .. import hmm
 
 SKIP_FAILING = True # skip failing tests
 
@@ -298,7 +299,7 @@ class GaussianHMMTester(GaussianHMMParams):
         samples = h.rvs(n)
         self.assertEquals(samples.shape, (n, self.n_dim))
 
-    def test_fit(self, params='stmc', n_iter=15, **kwargs):
+    def test_fit(self, params='stmc', n_iter=15, verbose=False, **kwargs):
         h = hmm.GaussianHMM(self.n_states, self.n_dim, self.cvtype)
         h.startprob = self.startprob
         h.transmat = hmm.normalize(self.transmat
@@ -314,14 +315,15 @@ class GaussianHMMTester(GaussianHMMParams):
 
         trainll = train_hmm_and_keep_track_of_log_likelihood(
             h, train_obs, n_iter=n_iter, params=params, **kwargs)
-        if not np.all(np.diff(trainll) > 0):
+        if not np.all(np.diff(trainll) > 0) and verbose:
             print
             print ('Test train: %s (%s)\n  %s\n  %s'
                    % (self.cvtype, params, trainll, np.diff(trainll)))
         self.assertTrue(np.all(np.diff(trainll) > -0.5))
 
 
-    def test_fit_with_priors(self, params='stmc', n_iter=10):
+    def test_fit_with_priors(self, params='stmc', n_iter=10,
+                                        verbose=False):
         startprob_prior=10*self.startprob + 2.0
         transmat_prior=10*self.transmat + 2.0
         means_prior=self.means
@@ -353,7 +355,7 @@ class GaussianHMMTester(GaussianHMMParams):
 
         trainll = train_hmm_and_keep_track_of_log_likelihood(
             h, train_obs, n_iter=n_iter, params=params)
-        if not np.all(np.diff(trainll) > 0):
+        if not np.all(np.diff(trainll) > 0) and verbose:
             print
             print ('Test MAP train: %s (%s)\n  %s\n  %s'
                    % (self.cvtype, params, trainll, np.diff(trainll)))
@@ -463,7 +465,7 @@ class TestMultinomialHMM(MultinomialHMMParams,
         self.assertEquals(len(samples), n)
         self.assertEquals(len(np.unique(samples)), self.nsymbols)
 
-    def test_fit(self, params='ste', n_iter=15, **kwargs):
+    def test_fit(self, params='ste', n_iter=15, verbose=False, **kwargs):
         h = hmm.MultinomialHMM(self.n_states, self.nsymbols,
                                startprob=self.startprob,
                                transmat=self.transmat,
@@ -481,7 +483,7 @@ class TestMultinomialHMM(MultinomialHMMParams,
 
         trainll = train_hmm_and_keep_track_of_log_likelihood(
             h, train_obs, n_iter=n_iter, params=params, **kwargs)
-        if not np.all(np.diff(trainll) > 0):
+        if not np.all(np.diff(trainll) > 0) and verbose:
             print
             print 'Test train: (%s)\n  %s\n  %s' % (params, trainll,
                                                     np.diff(trainll))
@@ -576,7 +578,7 @@ class TestGMMHMM(GMMHMMParams, SeedRandomNumberGeneratorTestCase):
         samples = h.rvs(n)
         self.assertEquals(samples.shape, (n, self.n_dim))
 
-    def test_fit(self, params='stmwc', n_iter=5, **kwargs):
+    def test_fit(self, params='stmwc', n_iter=5, verbose=False, **kwargs):
         h = hmm.GMMHMM(self.n_states, self.n_dim)
         h.startprob = self.startprob
         h.transmat = hmm.normalize(self.transmat
@@ -594,7 +596,7 @@ class TestGMMHMM(GMMHMMParams, SeedRandomNumberGeneratorTestCase):
 
         trainll = train_hmm_and_keep_track_of_log_likelihood(
             h, train_obs, n_iter=n_iter, params=params, **kwargs)
-        if not np.all(np.diff(trainll) > 0):
+        if not np.all(np.diff(trainll) > 0) and verbose:
             print
             print 'Test train: (%s)\n  %s\n  %s' % (params, trainll,
                                                     np.diff(trainll))

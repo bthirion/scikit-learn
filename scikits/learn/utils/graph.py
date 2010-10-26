@@ -33,6 +33,7 @@ def single_source_shortest_path_length(graph, source, cutoff=None):
 
     Examples
     --------
+    >>> from scikits.learn.utils.graph import single_source_shortest_path_length
     >>> import numpy as np
     >>> graph = np.array([[ 0, 1, 0, 0],
     ...                   [ 1, 0, 1, 0],
@@ -77,7 +78,7 @@ else:
 def _graph_laplacian_sparse(graph, normed=False, return_diag=False):
     n_nodes = graph.shape[0]
     if not graph.format == 'coo':
-        lap = -graph.tocoo()
+        lap = (-graph).tocoo()
     else:
         lap = -graph.copy()
     diag_mask = (lap.row == lap.col)
@@ -85,7 +86,13 @@ def _graph_laplacian_sparse(graph, normed=False, return_diag=False):
         # The sparsity pattern of the matrix has holes on the diagonal,
         # we need to fix that
         diag_idx = lap.row[diag_mask]
-        lap = lap.tolil()
+
+        try:
+            lap = lap.tolil()
+        except AttributeError:
+            # versions of scipy prior to 0.7 do not implement .tolil()
+            lap = sparse.lil_matrix(lap.tocsr())
+
         diagonal_holes = list(set(range(n_nodes)).difference(
                                 diag_idx))
         lap[diagonal_holes, diagonal_holes] = 1
@@ -127,6 +134,8 @@ def _graph_laplacian_dense(graph, normed=False, return_diag=False):
     
 
 def graph_laplacian(graph, normed=False, return_diag=False):
+    """ Return the Laplacian of the given graph.
+    """
     if normed and (np.issubdtype(graph.dtype, np.int)
                     or np.issubdtype(graph.dtype, np.uint)):
         graph = graph.astype(np.float)

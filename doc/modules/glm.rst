@@ -17,8 +17,8 @@ Across the module, we designate the vector :math:`\beta = (\beta_1,
 
 .. _ordinary_least_squares:
 
-Ordinary Least Squares
-======================
+Ordinary Least Squares (OLS)
+==============================
 
 :class:`LinearRegression` fits a linear model with coefficients
 :math:`\beta = (\beta_1, ..., \beta_D)` to minimize the residual sum
@@ -29,7 +29,6 @@ responses predicted by the linear approximation.
 .. figure:: ../auto_examples/glm/images/plot_ols.png
    :target: ../auto_examples/glm/plot_ols.html
    :scale: 50%
-   :align: center
 
 :class:`LinearRegression` will take in its `fit` method arrays X, y
 and will store the coefficients :math:`w` of the linear model in its
@@ -53,24 +52,23 @@ to random errors in the observed response, producing a large
 variance. This situation of *multicollinearity* can arise, for
 example, when data are collected without an experimental design.
 
+.. topic:: Examples:
 
-Complexity
-----------
+   * :ref:`example_glm_plot_ols.py`
+
+
+OLS Complexity
+------------------
 
 This method computes the least squares solution using a singular value
 decomposition of X. If X is a matrix of size (n, p ) this method has a
 cost of :math:`O(n p^2)`, assuming that :math:`n \geq p`.
 
 
-Examples
---------
-:ref:`example_glm_plot_ols.py`
-
-
 Ridge Regression
 ================
 
-:class:`Ridge` regression adresses some of the problems of
+:class:`Ridge` regression addresses some of the problems of
 :ref:`ordinary_least_squares` by imposing a penalty on the size of
 coefficients. The ridge coefficients minimize a penalized residual sum
 of squares,
@@ -96,8 +94,8 @@ greater the amount of shrinkage.
     >>> clf.intercept_
     0.13636363636363638
 
-Complexity
-----------
+Ridge Complexity
+--------------------
 
 This method has the same order of complexity than an
 :ref:`ordinary_least_squares`.
@@ -110,20 +108,20 @@ regularizer. The objective function to minimize is:
 
 .. math::  0.5 * ||y - X w||_2 ^ 2 + \alpha * ||w||_1
 
-The lasso estimate solves thus solves the minization of the
+The lasso estimate thus solves the minimization of the
 least-squares penalty with :math:`\alpha * ||w||_1` added, where
 :math:`\alpha` is a constant and :math:`||w||_1` is the L1-norm of the
 parameter vector.
 
 
-This formulation is useful in some context due to its tendency to
+This formulation is useful in some contexts due to its tendency to
 prefer solutions with fewer parameter values, effectively reducing the
 number of variables upon which the given solution is dependent. For
 this reason, the Lasso and its variants are fundamental to the field
 of compressed sensing.
 
 This implementation uses coordinate descent as the algorithm to fit
-the coeffcients. See :ref:`lars_algorithm` for another implementation.
+the coefficients. See :ref:`lars_algorithm` for another implementation.
 
     >>> clf = glm.Lasso(alpha = 0.1)
     >>> clf.fit ([[0, 0], [1, 1]], [0, 1])
@@ -134,10 +132,10 @@ the coeffcients. See :ref:`lars_algorithm` for another implementation.
 The function lasso_path computes the coefficients along the full path
 of possible values.
 
-Examples
---------
-:ref:`example_glm_lasso_and_elasticnet.py`,
-:ref:`example_glm_lasso_path_with_crossvalidation.py`
+.. topic:: Examples:
+
+  * :ref:`example_glm_lasso_and_elasticnet.py`,
+  * :ref:`example_glm_lasso_path_with_crossvalidation.py`
 
 
 Elastic Net
@@ -146,16 +144,15 @@ Elastic Net
 regularizer.
 
 
-The objective function to minize is in this case
+The objective function to minimize is in this case
 
 .. math::        0.5 * ||y - X w||_2 ^ 2 + \alpha * \rho * ||w||_1 + \alpha * (1-\rho) * 0.5 * ||w||_2 ^ 2
 
 
-Examples
---------
+.. topic:: Examples:
 
-:ref:`example_glm_lasso_and_elasticnet.py`
-:ref:`example_plot_lasso_coordinate_descent_path.py`
+  * :ref:`example_glm_lasso_and_elasticnet.py`
+  * :ref:`example_glm_plot_lasso_coordinate_descent_path.py`
 
 
 .. _lars_algorithm:
@@ -183,7 +180,7 @@ The advantages of LARS are:
   - It is easily modified to produce solutions for other estimators,
     like the Lasso. 
 
-  - It is effective in contexts where p >> n (IE, when the number of
+  - It is effective in contexts where p >> n (i.e., when the number of
     dimensions is significantly greater than the number of points)
 
 The disadvantages of the LARS method include:
@@ -206,17 +203,26 @@ solution, which is piecewise linear as a function of the norm of its
 coefficients.
 
 
+   >>> from scikits.learn import glm
    >>> clf = glm.LassoLARS(alpha=.1)
    >>> clf.fit ([[0, 0], [1, 1]], [0, 1])
-   LassoLARS(normalize=True, alpha=0.1, max_iter=None)
+   LassoLARS(max_features=None, alpha=0.1, normalize=True, fit_intercept=True)
    >>> clf.coef_
    array([ 0.50710678,  0.        ])
 
 
+.. topic:: Examples:
+
+ * :ref:`example_glm_plot_lar.py`
+ * :ref:`example_glm_plot_lasso_lars.py`
+
+
 Getting the full path
 ---------------------
-See function scikits.learn.glm.lars_path.
+See function scikits.learn.glm.lars_path:
 
+.. autofunction:: lars_path
+ 
 
 Mathematical formulation
 ------------------------
@@ -232,27 +238,22 @@ parameter vector. The full coeffients path is stored in the array
 ``coef_path_``, which has size (n_features, max_features+1). The first
 column is always zero.
 
+.. topic:: References:
 
-Examples
---------
-:ref:`example_glm_plot_lar.py`, :ref:`example_glm_plot_lasso_lars.py`
-
-References 
-----------
-Original Algorithm is detailed in the `paper
-<http://www-stat.stanford.edu/~hastie/Papers/LARS/LeastAngle_2002.pdf>`_
-by Hastie et al.
+ * Original Algorithm is detailed in the paper `Least Angle Regression
+   <http://www-stat.stanford.edu/~hastie/Papers/LARS/LeastAngle_2002.pdf>`_
+   by Hastie et al.
 
 
 
 Bayesian Regression
 ===================
 
-Bayesian regression techniques can be used to include regularization parameters
-in the estimation procedure. This can be done by introducing some prior
-knowledge over the parameters. 
-For example, penalization by weighted :math:`\ell_{2}` norm is equivalent to
-setting Gaussian priors on the weights. 
+Bayesian regression techniques can be used to include regularization
+parameters in the estimation procedure. This can be done by
+introducing some prior knowledge over the parameters.  For example,
+penalization by weighted :math:`\ell_{2}` norm is equivalent to
+setting Gaussian priors on the weights.
 
 The advantages of *Bayesian Regression* are:
 
@@ -261,7 +262,7 @@ The advantages of *Bayesian Regression* are:
     - It can be used to include regularization parameters in the
       estimation procedure.
 
-The dissadvantages of *Bayesian Regression* include:
+The disadvantages of *Bayesian Regression* include:
 
     - Inference of the model can be time consuming.
 
@@ -300,9 +301,6 @@ By default :math:`\alpha_1 = \alpha_2 =  \lambda_1 = \lambda_2 = 1.e-6`, *i.e.*
 
 
 
-
-
-
 .. figure:: ../auto_examples/glm/images/plot_bayesian_ridge.png
    :target: ../auto_examples/glm/plot_bayesian_ridge.html
    :align: center
@@ -311,40 +309,37 @@ By default :math:`\alpha_1 = \alpha_2 =  \lambda_1 = \lambda_2 = 1.e-6`, *i.e.*
 *Bayesian Ridge Regression* is used for regression:
 
     >>> from scikits.learn import glm
-    >>> X = [[0., 0.], [1., 2.], [2., -1.], [3., -1.]]
+    >>> X = [[0., 0.], [1., 1.], [2., 2.], [3., 3.]]
     >>> Y = [0., 1., 2., 3.]
     >>> clf = glm.BayesianRidge()
     >>> clf.fit (X, Y)
-    BayesianRidge(n_iter=300, th_w=1e-12, compute_ll=False, fit_intercept=True)
+    BayesianRidge(n_iter=300, verbose=False, lambda_1=1e-06, lambda_2=1e-06,
+           fit_intercept=True, eps=0.001, alpha_2=1e-06, alpha_1=1e-06,
+           compute_score=False)
 
 After being fitted, the model can then be used to predict new values::
 
-    >>> clf.predict ([[-1.5, 0.]])
-    array([ 1.5])
+    >>> clf.predict ([[1, 0.]])
+    array([ 0.50000013])
 
 
 The weights :math:`\beta` of the model can be access:
 
     >>> clf.coef_
-    array([ 0.93688528, -0.03034525])
+    array([ 0.49999993,  0.49999993])
 
 Due to the Bayesian framework, the weights found are slightly different to the
 ones found by :ref:`ordinary_least_squares`. However, *Bayesian Ridge
 Regression* is more robust to ill-posed problem.
 
+.. topic:: Examples:
 
-Examples
---------
-:ref:`example_glm_plot_bayesian_ridge.py`
+ * :ref:`example_glm_plot_bayesian_ridge.py`
 
-References
-----------
-More details can be found in the article
-`paper
-<http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.27.9072&rep=rep1&type=
-pdf>`_ by MacKay, David J. C.
+.. topic:: References
 
-
+  * More details can be found in the article `paper <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.27.9072&rep=rep1&type=pdf>`_ 
+    by MacKay, David J. C.
 
 
 
@@ -377,9 +372,9 @@ By default :math:`\alpha_1 = \alpha_2 =  \lambda_1 = \lambda_2 = 1.e-6`, *i.e.*
    :align: center
 
 
-Examples
---------
-:ref:`example_glm_plot_ard.py`
+.. topic:: Examples:
+
+  * :ref:`example_glm_plot_ard.py`
 
 Mathematical formulation
 ------------------------
@@ -417,9 +412,8 @@ assumption:
 where :math:`\alpha` is the precision of the noise.
 
 
+.. topic:: References
 
-References
-----------
-Original Algorithm is detailed in the  book *Bayesian learning for neural
-networks* by Radford M. Neal
+ * Original Algorithm is detailed in the  book *Bayesian learning for neural
+   networks* by Radford M. Neal
 

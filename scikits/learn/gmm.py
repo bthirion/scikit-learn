@@ -1,30 +1,14 @@
-#
-# Gaussian Mixture Models
-#
+"""
+Gaussian Mixture Models
+"""
+
 # Author: Ron Weiss <ronweiss@gmail.com>
 #         Fabian Pedregosa <fabian.pedregosa@inria.fr>
 #
 
-import itertools
-
 import numpy as np
-from scipy import cluster
 
 from .base import BaseEstimator
-
-#######################################################
-#
-# This module is experimental. It is meant to replace
-# the em module, but before that happens, some work
-# must be done:
-#
-#   - migrate the plotting methods from em (see
-#     em.gauss_mix.GM.plot)
-#   - profile and benchmark
-#   - adopt naming scheme used in other modules (svm, glm)
-#     for estimated parameters (trailing underscore, etc.)
-#
-#######################################################
 
 
 def logsum(A, axis=None):
@@ -46,6 +30,7 @@ def logsum(A, axis=None):
     return Asum
 
 
+# TODO: this lacks a docstring
 def normalize(A, axis=None):
     A += np.finfo(float).eps
     Asum = A.sum(axis)
@@ -126,7 +111,8 @@ def sample_gaussian(mean, covar, cvtype='diag', n=1):
     elif cvtype == 'diag':
         rand = np.dot(np.diag(np.sqrt(covar)), rand)
     else:
-        U, s, V = np.linalg.svd(covar)
+        from scipy import linalg
+        U, s, V = linalg.svd(covar)
         sqrtS = np.diag(np.sqrt(s))
         sqrt_covar = np.dot(U, np.dot(sqrtS, V))
         rand = np.dot(sqrt_covar, rand)
@@ -146,10 +132,10 @@ class GMM(BaseEstimator):
     cvtype : string (read-only)
         String describing the type of covariance parameters used by
         the GMM.  Must be one of 'spherical', 'tied', 'diag', 'full'.
-    n_dim : int (read-only)
+    n_dim : int
         Dimensionality of the Gaussians.
     n_states : int (read-only)
-        Number of states (mixture components).
+        Number of mixture components.
     weights : array, shape (`n_states`,)
         Mixing weights for each mixture component.
     means : array, shape (`n_states`, `n_dim`)
@@ -184,43 +170,56 @@ class GMM(BaseEstimator):
     Examples
     --------
     >>> import numpy as np
+    >>> from scikits.learn.gmm import GMM
     >>> g = GMM(n_states=2, n_dim=1)
     >>> # The initial parameters are fixed.
-    >>> print np.round(g.weights, 2)
-    [ 0.5  0.5]
-    >>> print np.round(g.means, 2)
-    [[ 0.]
-     [ 0.]]
-    >>> print np.round(g.covars, 2)
-    [[[ 1.]]
+    >>> np.round(g.weights, 2)
+    array([ 0.5,  0.5])
+    >>> np.round(g.means, 2)
+    array([[ 0.],
+           [ 0.]])
+    >>> np.round(g.covars, 2)
+    array([[[ 1.]],
     <BLANKLINE>
-     [[ 1.]]]
+           [[ 1.]]])
 
     >>> # Generate random observations with two modes centered on 0
     >>> # and 10 to use for training.
     >>> np.random.seed(0)
     >>> obs = np.concatenate((np.random.randn(100, 1),
     ...                       10 + np.random.randn(300, 1)))
-    >>> _ = g.fit(obs)
-    >>> print np.round(g.weights, 2)
-    [ 0.75  0.25]
-    >>> print np.round(g.means, 2)
-    [[ 9.94]
-     [ 0.06]]
-    >>> print np.round(g.covars, 2)
-    [[[ 0.96]]
-    <BLANKLINE>
-     [[ 1.02]]]
-    >>> print g.predict([[0], [2], [9], [10]])
-    [1 1 0 0]
-    >>> print np.round(g.score([[0], [2], [9], [10]]), 2)
-    [-2.32 -4.16 -1.65 -1.19]
+    >>> g.fit(obs) #doctest: +ELLIPSIS
+    GMM(n_dim=1, cvtype='diag',
+      means=array([[ ...],
+           [ ...]]),
+      covars=[array([[ ...]]), array([[ ...]])], n_states=2,
+      weights=array([ 0.75,  0.25]))
+
+    >>> np.round(g.weights, 2)
+    array([ 0.75,  0.25])
+    >>> np.round(g.means, 2)
+    array([[ 9.94],
+           [ 0.06]])
+    >>> np.round(g.covars, 2)
+    ... #doctest: +NORMALIZE_WHITESPACE
+    array([[[ 0.96]],
+           [[ 1.02]]])
+    >>> g.predict([[0], [2], [9], [10]])
+    array([1, 1, 0, 0])
+    >>> np.round(g.score([[0], [2], [9], [10]]), 2)
+    array([-2.32, -4.16, -1.65, -1.19])
 
     >>> # Refit the model on new data (initial parameters remain the
     >>> #same), this time with an even split between the two modes.
-    >>> _ = g.fit(20 * [[0]] +  20 * [[10]])
-    >>> print np.round(g.weights, 2)
-    [ 0.5  0.5]
+    >>> g.fit(20 * [[0]] +  20 * [[10]])
+    GMM(n_dim=1, cvtype='diag',
+      means=array([[ 10.],
+           [  0.]]),
+      covars=[array([[ 0.001]]), array([[ 0.001]])], n_states=2,
+      weights=array([ 0.5,  0.5]))
+
+    >>> np.round(g.weights, 2)
+    array([ 0.5,  0.5])
     """
 
     def __init__(self, n_states=1, n_dim=1, cvtype='diag', weights=None,
@@ -243,7 +242,7 @@ class GMM(BaseEstimator):
         """
 
         self._n_states = n_states
-        self._n_dim = n_dim
+        self.n_dim = n_dim
         self._cvtype = cvtype
 
         if not cvtype in ['spherical', 'tied', 'diag', 'full']:
@@ -274,11 +273,6 @@ class GMM(BaseEstimator):
         return self._cvtype
 
     @property
-    def n_dim(self):
-        """Dimensionality of the mixture components."""
-        return self._n_dim
-
-    @property
     def n_states(self):
         """Number of mixture components in the model."""
         return self._n_states
@@ -296,7 +290,7 @@ class GMM(BaseEstimator):
 
     def _set_covars(self, covars):
         covars = np.asanyarray(covars)
-        _validate_covars(covars, self._cvtype, self._n_states, self._n_dim)
+        _validate_covars(covars, self._cvtype, self._n_states, self.n_dim)
         self._covars = covars
 
     covars = property(_get_covars, _set_covars)
@@ -307,7 +301,7 @@ class GMM(BaseEstimator):
 
     def _set_means(self, means):
         means = np.asarray(means)
-        if means.shape != (self._n_states, self._n_dim):
+        if means.shape != (self._n_states, self.n_dim):
             raise ValueError('means must have shape (n_states, n_dim)')
         self._means = means.copy()
 
@@ -421,7 +415,7 @@ class GMM(BaseEstimator):
         weight_pdf = self.weights
         weight_cdf = np.cumsum(weight_pdf)
 
-        obs = np.empty((n, self._n_dim))
+        obs = np.empty((n, self.n_dim))
         for x in xrange(n):
             rand = np.random.rand()
             c = (weight_cdf > rand).argmax()
@@ -431,6 +425,7 @@ class GMM(BaseEstimator):
                 cv = self._covars[c]
             obs[x] = sample_gaussian(self._means[c], cv, self._cvtype)
         return obs
+
 
     def fit(self, X, n_iter=10, min_covar=1e-3, thresh=1e-2, params='wmc',
             init_params='wmc', **kwargs):
@@ -469,9 +464,10 @@ class GMM(BaseEstimator):
 
         ## initialization step
 
-        X = np.asanyarray(X, dtype=np.float64)
+        X = np.asanyarray(X)
 
         if 'm' in init_params:
+            from scipy import cluster
             if not 'minit' in kwargs:
                 kwargs.update({'minit': 'points'})
             self._means, tmp = cluster.vq.kmeans2(X, self._n_states, **kwargs)
@@ -544,10 +540,11 @@ def _lmvnpdfspherical(obs, means=0.0, covars=1.0):
 
 
 def _lmvnpdftied(obs, means, covars):
+    from scipy import linalg
     nobs, ndim = obs.shape
     # (x-y).T A (x-y) = x.T A x - 2x.T A y + y.T A y
-    icv = np.linalg.inv(covars)
-    lpr = -0.5 * (ndim * np.log(2 * np.pi) + np.log(np.linalg.det(covars))
+    icv = linalg.pinv(covars)
+    lpr = -0.5 * (ndim * np.log(2 * np.pi) + np.log(linalg.det(covars))
                   + np.sum(obs * np.dot(obs, icv), 1)[:,np.newaxis]
                   - 2 * np.dot(np.dot(obs, icv), means.T)
                   + np.sum(means * np.dot(means, icv), 1))
@@ -556,23 +553,23 @@ def _lmvnpdftied(obs, means, covars):
 
 def _lmvnpdffull(obs, means, covars):
     # FIXME: this representation of covars is going to lose for caching
+    from scipy import linalg
+    import itertools
     nobs, ndim = obs.shape
     nmix = len(means)
     lpr = np.empty((nobs,nmix))
     for c, (mu, cv) in enumerate(itertools.izip(means, covars)):
-        icv = np.linalg.inv(cv)
+        icv = linalg.pinv(cv)
         lpr[:,c] = -0.5 * (ndim * np.log(2 * np.pi)
-                           + np.log(np.linalg.det(cv)))
+                           + np.log(linalg.det(cv)))
         for o, currobs in enumerate(obs):
             dzm = (currobs - mu)
             lpr[o,c] += -0.5 * np.dot(np.dot(dzm, icv), dzm.T)
-        #dzm = (obs - mu)
-        #lpr[:,c] = -0.5 * (np.dot(np.dot(dzm, np.linalg.inv(cv)), dzm.T)
-        #                   + np.log(2 * np.pi) + np.linalg.det(cv)).diagonal()
     return lpr
 
 
 def _validate_covars(covars, cvtype, nmix, ndim):
+    from scipy import linalg
     if cvtype == 'spherical':
         if len(covars) != nmix:
             raise ValueError("'spherical' covars must have length nmix")
@@ -582,7 +579,7 @@ def _validate_covars(covars, cvtype, nmix, ndim):
         if covars.shape != (ndim, ndim):
             raise ValueError("'tied' covars must have shape (ndim, ndim)")
         elif (not np.allclose(covars, covars.T)
-              or np.any(np.linalg.eigvalsh(covars) <= 0)):
+              or np.any(linalg.eigvalsh(covars) <= 0)):
             raise ValueError("'tied' covars must be symmetric, "
                              "positive-definite")
     elif cvtype == 'diag':
@@ -596,7 +593,7 @@ def _validate_covars(covars, cvtype, nmix, ndim):
                              "(nmix, ndim, ndim)")
         for n,cv in enumerate(covars):
             if (not np.allclose(cv, cv.T)
-                or np.any(np.linalg.eigvalsh(cv) <= 0)):
+                or np.any(linalg.eigvalsh(cv) <= 0)):
                 raise ValueError("component %d of 'full' covars must be "
                                  "symmetric, positive-definite" % n)
 
@@ -636,18 +633,15 @@ def _covar_mstep_spherical(*args):
 
 
 def _covar_mstep_full(gmm, obs, posteriors, avg_obs, norm, min_covar):
-    print "THIS IS BROKEN"
     # Eq. 12 from K. Murphy, "Fitting a Conditional Linear Gaussian
     # Distribution"
-    avg_obs2 = np.dot(obs.T, obs)
-    #avg_obs2 = np.dot(obs.T, avg_obs)
-    cv = np.empty((gmm._n_states, gmm._n_dim, gmm._n_dim))
+    cv = np.empty((gmm._n_states, gmm.n_dim, gmm.n_dim))
     for c in xrange(gmm._n_states):
-        wobs = obs.T * posteriors[:,c]
-        avg_obs2 = np.dot(wobs, obs) / posteriors[:,c].sum()
+        post = posteriors[:,c]
+        avg_cv = np.dot(post * obs.T, obs) / post.sum()
         mu = gmm._means[c][np.newaxis]
-        cv[c] = (avg_obs2 - np.dot(mu, mu.T)
-                 + min_covar * np.eye(gmm._n_dim))
+        cv[c] = (avg_cv - np.dot(mu.T, mu)
+                 + min_covar * np.eye(gmm.n_dim))
     return cv
 
 
@@ -660,7 +654,7 @@ def _covar_mstep_tied(gmm, obs, posteriors, avg_obs, norm, min_covar):
     # Eq. 15 from K. Murphy, "Fitting a Conditional Linear Gaussian
     avg_obs2 = np.dot(obs.T, obs)
     avg_means2 = np.dot(gmm._means.T, gmm._means)
-    return (avg_obs2 - avg_means2 + min_covar * np.eye(gmm._n_dim))
+    return (avg_obs2 - avg_means2 + min_covar * np.eye(gmm.n_dim))
 
 
 def _covar_mstep_slow(gmm, obs, posteriors, avg_obs, norm, min_covar):
@@ -669,13 +663,13 @@ def _covar_mstep_slow(gmm, obs, posteriors, avg_obs, norm, min_covar):
     for c in xrange(gmm._n_states):
         mu = gmm._means[c]
         #cv = np.dot(mu.T, mu)
-        avg_obs2 = np.zeros((gmm._n_dim, gmm._n_dim))
+        avg_obs2 = np.zeros((gmm.n_dim, gmm.n_dim))
         for t,o in enumerate(obs):
             avg_obs2 += posteriors[t,c] * np.outer(o, o)
         cv = (avg_obs2 / w[c]
               - 2 * np.outer(avg_obs[c] / w[c], mu)
               + np.outer(mu, mu)
-              + min_covar * np.eye(gmm._n_dim))
+              + min_covar * np.eye(gmm.n_dim))
         if gmm.cvtype == 'spherical':
             covars[c] = np.diag(cv).mean()
         elif gmm.cvtype == 'diag':
@@ -690,6 +684,6 @@ def _covar_mstep_slow(gmm, obs, posteriors, avg_obs, norm, min_covar):
 _covar_mstep_funcs = {'spherical': _covar_mstep_spherical,
                       'diag': _covar_mstep_diag,
                       #'tied': _covar_mstep_tied,
-                      #'full': _covar_mstep_full,
+                      'full': _covar_mstep_full,
                       'tied': _covar_mstep_slow,
-                      'full': _covar_mstep_slow}
+                      }
