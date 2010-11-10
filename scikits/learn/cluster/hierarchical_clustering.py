@@ -9,16 +9,42 @@ Moreover, these should be related to a forest/tree class in the future.
 Author : Bertrand Thirion, 2006-2010
 """
 
-
 import numpy as np
-
-from nipy.neurospin.eda.dimension_reduction import Euclidian_distance
-
-
 
 ###########################################################################
 # Ward's algorithm 
 ###########################################################################
+
+def euclidian_distance(x, y=None):
+    """
+    Considering the rows of x and y as vectors, compute the
+    distance matrix between each pair of vector
+    
+    Parameters
+    ----------
+    x, array of shape (n1, p)
+    y=None, array of shape (n2, p)
+            if y==None, then y=x is used 
+
+    Returns
+    -------
+    dist, array fo shape(n1, n2)
+    """
+    if y == None:
+        y = x
+    if x.shape[1] != y.shape[1]:
+        raise ValueError, "incompatible dimension for x and y matrices"
+    
+    s1 = x.shape[0]
+    s2 = y.shape[0]
+    nx = np.reshape(np.sum(x*x, 1), (s1, 1))
+    ny = np.reshape(np.sum(y*y, 1), (1, s2))
+    dist = np.repeat(nx, s2, 1) + np.repeat(ny, s1, 0)
+    dist -= 2*np.dot(x, y.T)
+    dist = np.maximum(dist, 0)
+    dist = np.sqrt(dist)
+    return dist
+
 
 def _inertia(i, j, moments):
     """
