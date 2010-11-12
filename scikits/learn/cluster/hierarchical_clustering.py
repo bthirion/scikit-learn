@@ -91,8 +91,7 @@ def ward(feature, verbose=0):
     inertia = np.infty * np.ones((q, q))
     for i in range(n_samples):
         for j in range(i):
-            ESS = _inertia(i, j, moments)
-            inertia[i,j] = ESS
+            inertia[i, j] = _inertia(i, j, moments)
 
     # prepare the main fields
     parent = np.arange(q).astype(np.int)
